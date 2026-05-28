@@ -1,14 +1,11 @@
-from typing import TypedDict
-from typing import List, Dict, Any
+from typing import TypedDict, List, Dict, Any
 
-from typing_extensions import Annotated
-
-from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
 
 
 class AgentState(TypedDict):
 
-    messages: Annotated[list, add_messages]
+    messages: List[BaseMessage]
 
     birth_details: Dict[str, Any]
 

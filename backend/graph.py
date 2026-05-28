@@ -1,45 +1,68 @@
-from langgraph.graph import StateGraph, END
+from langgraph.graph import (
+    StateGraph,
+    END
+)
 
 from langchain_groq import ChatGroq
 
 from langchain_core.messages import (
-    SystemMessage,
-    ToolMessage
+    SystemMessage
 )
 
 from state import AgentState
 
 from prompts import SYSTEM_PROMPT
 
-from config import (
-    GROQ_API_KEY,
-    MODEL_NAME
+from tools import (
+    compute_birth_chart
 )
 
-from tools import (
-    compute_birth_chart_tool,
-    generate_chart_svg_tool
-)
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 llm = ChatGroq(
-    api_key=GROQ_API_KEY,
-    model=MODEL_NAME
-)
-
-tools = {
-    "compute_birth_chart_tool":
-    compute_birth_chart_tool,
-
-    "generate_chart_svg_tool":
-    generate_chart_svg_tool
-}
-
-llm_with_tools = llm.bind_tools(
-    list(tools.values())
+    model="llama-3.1-8b-instant",
+    temperature=0.7
 )
 
 
-def reasoning_node(state: AgentState):
+def chart_generation_node(
+    state: AgentState
+):
+
+    natal_chart = state.get(
+        "natal_chart",
+        {}
+    )
+
+    birth_details = state.get(
+        "birth_details",
+        {}
+    )
+
+    if natal_chart:
+
+        return state
+
+    chart_data = compute_birth_chart.invoke({
+
+        "birth_date": birth_details["birth_date"],
+
+        "birth_time": birth_details["birth_time"],
+
+        "birth_place": birth_details["birth_place"]
+    })
+
+    state["natal_chart"] = chart_data
+
+    return state
+
+
+def reasoning_node(
+    state: AgentState
+):
 
     messages = state["messages"]
 
@@ -58,7 +81,7 @@ def reasoning_node(state: AgentState):
         )
 
         chart_context = (
-            f"\nUser Natal Chart:\n"
+            "\nUser Natal Chart Context:\n"
             f"{chart_summary}\n"
         )
 
@@ -70,98 +93,46 @@ def reasoning_node(state: AgentState):
         )
     )
 
-    response = llm_with_tools.invoke([
+    response = llm.invoke([
 
         system_message,
 
         *messages
     ])
 
-    return {
-        "messages": [response]
-    }
-
-
-def tool_node(state: AgentState):
-
-    messages = state["messages"]
-
-    last_message = messages[-1]
-
-    tool_messages = []
-
-    natal_chart = state.get(
-        "natal_chart",
-        {}
+    state["messages"].append(
+        response
     )
 
-    for tool_call in last_message.tool_calls:
-
-        tool_name = tool_call["name"]
-
-        tool = tools[tool_name]
-
-        result = tool.invoke(
-            tool_call["args"]
-        )
-
-        if tool_name == "compute_birth_chart_tool":
-
-            natal_chart = result
-
-        tool_messages.append(
-
-            ToolMessage(
-                content="Birth chart computed successfully.",
-                tool_call_id=tool_call["id"]
-            )
-        )
-
-    return {
-
-        "messages": tool_messages,
-
-        "natal_chart": natal_chart
-    }
+    return state
 
 
-def should_continue(state: AgentState):
+workflow = StateGraph(
+    AgentState
+)
 
-    messages = state["messages"]
+workflow.add_node(
+    "chart_generation",
+    chart_generation_node
+)
 
-    last_message = messages[-1]
-
-    if last_message.tool_calls:
-
-        return "tools"
-
-    return END
-
-
-graph_builder = StateGraph(AgentState)
-
-graph_builder.add_node(
+workflow.add_node(
     "reasoning",
     reasoning_node
 )
 
-graph_builder.add_node(
-    "tools",
-    tool_node
+workflow.set_entry_point(
+    "chart_generation"
 )
 
-graph_builder.set_entry_point(
+workflow.add_edge(
+    "chart_generation",
     "reasoning"
 )
 
-graph_builder.add_conditional_edges(
+workflow.add_edge(
     "reasoning",
-    should_continue
+    END
 )
 
-graph_builder.add_edge(
-    "tools",
-    "reasoning"
-)
-
-astro_graph = graph_builder.compile()
+astro_graph = workflow.compile()

@@ -21,7 +21,7 @@ def geocode_place_tool(place: str):
 
 
 @tool
-def compute_birth_chart_tool(
+def compute_birth_chart(
     birth_date: str,
     birth_time: str,
     birth_place: str
