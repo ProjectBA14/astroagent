@@ -1,6 +1,22 @@
-import ChatPage from "./pages/ChatPage";
+import ChatPage
+  from "./pages/ChatPage";
+
+import OnboardingPage
+  from "./pages/OnboardingPage";
+
+import {
+  useChatStore
+} from "./store/chatStore";
 
 export default function App() {
 
-  return <ChatPage />;
+  const {
+    initialized
+  } = useChatStore();
+
+  return initialized
+
+    ? <ChatPage />
+
+    : <OnboardingPage />;
 }

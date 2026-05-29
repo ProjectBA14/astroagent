@@ -3,9 +3,6 @@ import { useState } from "react";
 import { API_BASE_URL }
   from "../lib/api";
 
-import { getSessionId }
-  from "../lib/session";
-
 import {
   useChatStore
 } from "../store/chatStore";
@@ -16,6 +13,7 @@ export default function ChatPage() {
     useState("");
 
   const {
+    sessionId,
     messages,
     addMessage
   } = useChatStore();
@@ -53,7 +51,7 @@ export default function ChatPage() {
         body: JSON.stringify({
 
           session_id:
-            getSessionId(),
+            sessionId,
 
           message:
             userMessage

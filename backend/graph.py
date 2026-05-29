@@ -61,50 +61,60 @@ def chart_generation_node(
 
 
 def reasoning_node(
-    state: AgentState
-):
+        state: AgentState
+    ):
 
-    messages = state["messages"]
+        messages = state["messages"]
 
-    natal_chart = state.get(
-        "natal_chart",
-        {}
-    )
-
-    chart_context = ""
-
-    if natal_chart:
-
-        chart_summary = natal_chart.get(
-            "chart_summary",
+        natal_chart = state.get(
+            "natal_chart",
             {}
         )
 
-        chart_context = (
-            "\nUser Natal Chart Context:\n"
-            f"{chart_summary}\n"
+        birth_details = state.get(
+            "birth_details",
+            {}
         )
 
-    system_message = SystemMessage(
+        chart_context = f"""
 
-        content=(
-            SYSTEM_PROMPT
-            + chart_context
+    User Birth Details:
+    {birth_details}
+
+    User Natal Chart:
+    {natal_chart}
+
+    """
+
+        system_message = SystemMessage(
+
+            content=(
+                SYSTEM_PROMPT
+                + chart_context
+            )
         )
-    )
 
-    response = llm.invoke([
+        response = llm.invoke([
 
-        system_message,
+            system_message,
 
-        *messages
-    ])
+            *messages
+        ])
 
-    state["messages"].append(
-        response
-    )
+        print("\n=== STATE ===")
+        print(state["birth_details"])
+        print(state["natal_chart"])
+        print("=============\n")
 
-    return state
+        return {
+
+            **state,
+
+            "messages": [
+                *state["messages"],
+                response
+            ]
+        }
 
 
 workflow = StateGraph(

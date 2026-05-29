@@ -1,15 +1,26 @@
 import { create } from "zustand";
 
 import type {
-  ChatMessage
+  ChatMessage,
+  BirthDetails
 } from "../types/chat";
 
-
 interface ChatStore {
+
+  sessionId: string | null;
+
+  initialized: boolean;
+
+  birthDetails: BirthDetails | null;
 
   messages: ChatMessage[];
 
   isStreaming: boolean;
+
+  setSession: (
+    sessionId: string,
+    birthDetails: BirthDetails
+  ) => void;
 
   addMessage: (
     message: ChatMessage
@@ -23,9 +34,29 @@ interface ChatStore {
 export const useChatStore =
   create<ChatStore>((set) => ({
 
+    sessionId: null,
+
+    initialized: false,
+
+    birthDetails: null,
+
     messages: [],
 
     isStreaming: false,
+
+    setSession: (
+      sessionId,
+      birthDetails
+    ) =>
+
+      set({
+
+        sessionId,
+
+        birthDetails,
+
+        initialized: true
+      }),
 
     addMessage: (message) =>
 

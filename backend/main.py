@@ -75,6 +75,10 @@ def create_dev_session():
         initial_state
     )
 
+    print("\n=== DEV SESSION RESULT ===")
+    print(result)
+    print("==========================\n")
+
     return result
 
 @api.post(
